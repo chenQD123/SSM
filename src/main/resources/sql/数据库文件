@@ -1,0 +1,53 @@
+-- ----------------------------
+-- Table structure for role
+-- ----------------------------
+CREATE TABLE `role`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '角色表主键',
+  `role_name` varchar(32) DEFAULT NULL COMMENT '角色名称',
+  PRIMARY KEY (`id`)
+);
+
+-- ----------------------------
+-- Records of role
+-- ----------------------------
+INSERT INTO `role` VALUES (1, 'SUPER_ADMIN');
+INSERT INTO `role` VALUES (2, 'ADMIN');
+INSERT INTO `role` VALUES (3, 'USER');
+
+-- ----------------------------
+-- Table structure for user
+-- ----------------------------
+DROP TABLE IF EXISTS `user`;
+CREATE TABLE `user`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '用户主键',
+  `username` varchar(32) NOT NULL COMMENT '用户名',
+  `password` varchar(32) NOT NULL COMMENT '密码',
+  `role_id` int(11) DEFAULT NULL COMMENT '与role角色表联系的外键',
+  PRIMARY KEY (`id`),
+  CONSTRAINT `user_role_on_role_id` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`)
+);
+
+-- ----------------------------
+-- Records of user
+-- ----------------------------
+INSERT INTO `user` VALUES (1, 'BWH_Steven', '666666', 1);
+INSERT INTO `user` VALUES (2, 'admin', '666666', 2);
+INSERT INTO `user` VALUES (3, 'zhangsan', '666666', 3);
+
+-- ----------------------------
+-- Table structure for permission
+-- ----------------------------
+CREATE TABLE `permission`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '权限表主键',
+  `permission_name` varchar(50) NOT NULL COMMENT '权限名',
+  `role_id` int(11) DEFAULT NULL COMMENT '与role角色表联系的外键',
+  PRIMARY KEY (`id`),
+  CONSTRAINT `permission_role_on_role_id` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`)
+);
+
+-- ----------------------------
+-- Records of permission
+-- ----------------------------
+INSERT INTO `permission` VALUES (1, 'user:*', 1);
+INSERT INTO `permission` VALUES (2, 'user:*', 2);
+INSERT INTO `permission` VALUES (3, 'user:queryAll', 3);

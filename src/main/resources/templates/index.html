@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh_CN"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      xmlns:shiro="http://www.pollix.at/thymeleaf/shiro"
+>
+<head>
+    <meta charset="UTF-8">
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
+
+    <title>信息管理平台-首页</title>
+    <!--semantic-ui-->
+    <link href="https://cdn.bootcss.com/semantic-ui/2.4.1/semantic.css" rel="stylesheet">
+    <link th:href="@{/css/index.css}" rel="stylesheet">
+    <link rel="stylesheet" href="http://cdn.static.runoob.com/libs/bootstrap/3.3.7/css/bootstrap.min.css">
+
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <!-- <script th:src="@{js/jquery-3.1.1.min.js}"></script> -->
+<!--    <script src="js/user.js"></script>-->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdn.bootcss.com/semantic-ui/2.4.1/semantic.js"></script>
+    <script src="http://cdn.static.runoob.com/libs/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+</head>
+
+<body>
+<div class="ui container">
+    <div class="ui secondary menu">
+        <a class="active  item" th:href="@{/index}">
+            首页
+        </a>
+        <a class="active item" th:href="@{/about}">
+            关于
+        </a>
+        <h1 class="ui red header" style="margin-left: 360px">用户管理系统</h1>
+        <!--登录注销-->
+        <div class="right menu">
+
+            <!--如果未登录-->
+            <!--<div shiro:authorize="!isAuthenticated()">-->
+            <div shiro:notAuthenticated="">
+                <a class="item" th:href="@{/toLoginPage}">
+                    <i class="address card icon"></i> 登录
+                </a>
+            </div>
+
+            <!--如果已登录-->
+            <div shiro:authenticated="">
+                <a class="item">
+                    <i class="address card icon"></i>
+                    用户名：<span shiro:principal></span>
+                    <!--角色：<span sec:authentication="principal.authorities"></span>-->
+                </a>
+            </div>
+
+            <div shiro:authenticated="">
+                <a class="item" th:href="@{/logout}">
+                    <i class="address card icon"></i> 注销
+                </a>
+            </div>
+        </div>
+    </div>
+
+
+    <br><br><br>
+    <h4 class="ui horizontal red divider header"><i class="address card outline icon"></i> 用户信息表格 </h4>
+    <div class="ui stackable one column grid">
+        <!--USER有查询的权限，ADMIN在USER的基础上可以修改，添加用户信息，SUPER_ADMIN可以删除-->
+        <div id="app" class="column" shiro:hasAnyRoles="USER,ADMIN,SUPER_ADMIN"><!--有其中任一一个角色课访问-->
+            <table class="ui celled table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>姓名</th>
+                    <th shiro:hasAnyRoles="SUPER_ADMIN,ADMIN">密码</th>
+                    <th>角色ID</th>
+                    <th shiro:hasAnyRoles="SUPER_ADMIN,ADMIN">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+
+                <!--vue和semantic的模态不兼容-->
+                <tr v-for="u in userList" shiro:hasAnyRoles="SUPER_ADMIN,ADMIN,USER">
+                    <td>{{u.id}}</td>
+                    <td>{{u.username}}</td>
+                    <td shiro:hasAnyRoles="SUPER_ADMIN,ADMIN">{{u.password}}</td>
+                    <td>{{u.role}}</td>
+                    <td shiro:hasAnyRoles="SUPER_ADMIN,ADMIN">
+                        <div class="btn btn-primary " shiro:hasAnyRoles="SUPER_ADMIN"
+                             @click="deleteUser(u.username)">
+                            <i class="trash alternate outline icon"></i>删除
+                        </div>
+                        <!-- 按钮触发模态框 -->
+                        <div class="btn btn-primary" shiro:hasAnyRoles="SUPER_ADMIN,ADMIN"
+                             @click="queryByName(u.username)"
+                             >
+                            <i class="trash edit outline icon"></i>修改
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+                <tfoot>
+                <!--分頁-->
+                <tr>
+                    <th colspan="5">
+                    <div class="ui right floated pagination menu">
+                        <a class="icon item">
+                            <i class="left chevron icon"></i>
+                        </a>
+                        <a class="item">1</a>
+                        <a class="item">2</a>
+                        <a class="item">3</a>
+                        <a class="item">4</a>
+                        <a class="icon item">
+                            <i class="right chevron icon"></i>
+                        </a>
+                    </div>
+                </th>
+                </tr>
+                </tfoot>
+            </table>
+
+            <div class="btn btn-primary" shiro:hasAnyRoles="SUPER_ADMIN,ADMIN"
+                 data-toggle="modal" data-target="#addModal">
+                <i class="add  icon"></i>增加
+            </div>
+
+            <!-- 增添模态框（Modal） -->
+            <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                                ×
+                            </button>
+                            <h4 class="modal-title" id="addModalLabel">
+                                增加用户
+                            </h4>
+                        </div>
+                        <div class="modal-body">
+                            <form>
+                                <div class="form-group">
+                                    <label for="username-add" class="control-label">用户名:</label>
+                                    <input v-model="user.username" type="text" class="form-control" id="username-add" placeholder="用户名或手机">
+                                </div>
+                                <div class="form-group">
+                                    <label for="username-add" class="control-label">密码:</label>
+                                    <input v-model="user.password" type="text" class="form-control" id="password-add" placeholder="密码"></input>
+                                </div>
+                                <div class="form-group">
+                                    <label for="username-add" class="control-label">角色:</label>
+                                    <input v-model="user.roleId" type="text" class="form-control" id="roleId-add" placeholder="(1、2、3)其中一个"></input>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">关闭
+                            </button>
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" @click="addUser">
+                                确定增加
+                            </button>
+                        </div>
+                    </div><!-- /.modal-content -->
+                </div><!-- /.modal -->
+            </div>
+
+            <!-- 修改模态框（Modal） -->
+            <div class="modal fade" id="updateModal" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                                ×
+                            </button>
+                            <h4 class="modal-title" id="updateModalLabel">
+                                修改信息
+                            </h4>
+                        </div>
+                        <div class="modal-body">
+                            <form>
+                                <div class="form-group">
+                                    <label for="username-update" class="control-label">用户名:</label>
+                                    <input v-model="user.username" type="text" class="form-control" id="username-update" >
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label">密码:</label>
+                                    <input v-model="user.password" type="text" class="form-control" id="password-update" ></input>
+                                </div>
+                                <div class="form-group">
+                                    <label for="username-update" class="control-label">角色:</label>
+                                    <input v-model="user.roleId" type="text" class="form-control" id="roleId-update" ></input>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">关闭
+                            </button>
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" @click="updateUser">
+                                提交更改
+                            </button>
+                        </div>
+                    </div><!-- /.modal-content -->
+                </div><!-- /.modal -->
+            </div>
+
+
+        </div>
+
+
+
+
+
+        <!--<div class="column" shiro:hasAnyRoles="ADMIN,SUPER_ADMIN">
+            <div class="ui raised segments">
+                <div class="ui segment">
+                    <a th:href="@{/levelB/a}">L-B-a</a>
+                </div>
+                <div class="ui segment">
+                    <a th:href="@{/levelB/b}">L-B-b</a>
+                </div>
+                <div class="ui segment">
+                    <a th:href="@{/levelB/c}">L-B-c</a>
+                </div>
+            </div>
+        </div>-->
+        <!--<div class="column" shiro:hasRole="SUPER_ADMIN">
+        </div>-->
+<!--         <div class="column"></div>-->
+    </div>
+
+<br><br><br><br>
+
+    <h4 class="ui red horizontal divider header"><i class="address card outline icon"></i> 马老师全文背诵单元 </h4>
+    <!--马保国网易云外链-->
+    <div align="center">
+        <iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86 src="//music.163.com/outchain/player?type=2&id=1495851121&auto=1&height=66"></iframe>
+    </div>
+    <div class="ui piled red segment">
+        <div class="ui stackable three column grid">
+            <div class="column">
+                <p>
+                    朋友们好啊，我是混元形意太极门掌门人马保国<br/>
+                    刚才有个朋友问我马老师发生了什么事，我说怎么回事，给我发了几张截图<br/>
+                    我一看！嗷！原来是昨天，有两个年轻人<br/>
+                    三十多岁，一个体重 九十多公斤，一个体重八十多公斤<br/>
+                    他们说，哎……有一个说是我在健身房练功，颈椎练坏了<br/>
+                    马老师你能不能教教我混元功法？哎……帮助治疗一下我的颈椎病<br/>
+                    我说可以，我说你在健身房练死劲儿，不好使。他不服气<br/>
+                    哎……我说小朋友，你两个手来折我一个手指头，他折不动<br/>
+                    他说你这也没用<br/>
+                    我说这个有用，这是化劲儿，传统功夫是讲化劲的，四两拨千斤<br/>
+                    二百多斤的英国大力士，都握不动我这一个手指头……哈！<br/>
+                    他非要和我比试比试，我说可以。哎……我一说完他啪就站起来了，很快啊！<br/>
+                    然后上来就是一个左正蹬，一个右鞭腿，一个左刺拳。我全部防去 防出去了呃<br/>
+
+                </p>
+            </div>
+
+            <div class="column">
+                <p>
+                    防出去以后自然是传统功夫以点到为止，右拳放到他鼻子上没打他，我笑一下准备收拳<br/>
+                    因为这时间，按传统功夫点到为止他已经输了<br/>
+                    如果这一拳发力，一拳就把他鼻子打骨折了，放在鼻子上没有打他<br/>
+                    他也承认，我先打到他面部。他不知道拳放在他鼻子上，他承认我先打到他面部，啊！<br/>
+                    我收拳的时间不打了，他突然袭击，左刺拳来打我脸，啊，我大意了，没有闪。<br/>
+                    他的左拳给我眼，啊，右眼，蹭了一下，但没关系啊！他也说，他截图也说了，两分多钟以后<br/>
+                    当时流眼泪了，捂着眼，我说停停。然后两分钟以后，两分多钟以后就好了。<br/>
+                    我说小伙子你不讲武德，你不懂 他说马老师对不起对不起，我不懂规矩。<br/>
+                    啊，我是……他说他是乱打的，他可不是乱打的.<br/>
+                    正蹬腿左刺拳，训练有素。后来他说他练过三四年的泰拳，啊，看来是 有备而来<br/>
+                    这两个年轻人不讲武德，来骗！来偷袭，我六十九岁的老同志。这好吗？这不好。<br/>
+                    我劝 这位年轻人好自为之，好好反思，以后不要再犯这样的聪明，小聪明，啊<br/>
+                    呃，武林要以和为贵，要讲武德，不要搞窝里斗<br/>
+                    谢谢朋友们<br/>
+                    ❤
+                </p>
+            </div>
+            <div class="column">
+                <img class="ui medium circular image" src="images/4.jpg">
+            </div>
+        </div>
+
+    </div>
+
+    <div class="ui info message">
+        <div class="header">陈思宇181105036<br>赵鹏181105044<br>杨奇181105028</div>
+        <p>@WDNMD水鬼</p>
+    </div>
+    <!--$('#myModal').modal("show");-->
+</div>
+<script>
+    var vm = new Vue({
+        el: "#app",
+        data: {
+            user: {id:"",
+                username:"",
+                password:"",
+                roleId:"",
+                role:{id:"",roleName:""}
+                },
+            userList: [],
+            wo:"ri"
+        },
+        methods: {
+            addUser:function (user) {
+                var _this = this;
+                axios.post("/user/admin/add",_this.user).then(function (response) {
+                    _this.queryAll();
+                    console.log(_this.userList);
+                }).catch(function (err) {
+                    console.log(_this.user);
+                    console.log(err);
+                });
+            },
+            deleteUser:function (username) {
+                var _this = this;
+                axios.post("/user/admin/delete",username=username).then(function (response) {
+                    _this.queryAll();
+                }).catch(function (err) {
+                });
+            },
+            queryAll: function () {
+                var _this = this;
+                axios.get("/user/queryAll").then(function (response) {
+                    _this.userList = response.data;
+                    console.log(_this.userList);
+                }).catch(function (err) {
+                    console.log(err);
+                });
+            },
+            queryByName: function (username) {
+                var _this = this;
+                axios.get("/user/queryByName", {
+                    params: {
+                        username: username
+                    }
+                }).then(function (response) {
+                    _this.user = response.data;
+                    $('#updateModal').modal("show");
+                    console.log(_this.user);
+                }).catch(function (err) {
+                    console.log(err);
+                });
+            },
+            updateUser: function (user) {
+                var _this = this;
+                axios.post("/user/admin/update",_this.user).then(function (response) {
+                    _this.queryAll();
+                    console.log(_this.user);
+                }).catch(function (err) {
+                });
+            }
+        },
+        created(){
+            this.queryAll();
+        }
+    });
+</script>
+</body>
+</html>

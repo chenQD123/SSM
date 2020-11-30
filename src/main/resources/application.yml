@@ -1,0 +1,29 @@
+server:
+    port: 8080
+
+#数据源和Thymeleaf
+spring:
+    datasource:
+        driverClassName: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/usercontroller?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+        username: csy
+        password: 123456789
+        # Hikari will use the above plus the following to setup connection pooling
+        type: com.zaxxer.hikari.HikariDataSource
+        hikari:
+            minimum-idle: 10
+            maximum-pool-size: 25
+            auto-commit: true
+            idle-timeout: 50000
+            pool-name: DatebookHikariCP
+            max-lifetime: 200000
+            connection-timeout: 30000
+            connection-test-query: SELECT 1
+    thymeleaf:
+        prefix: "classpath:/templates/"
+        suffix: ".html"
+
+# mybatis configuration
+mybatis:
+    type-aliases-package: com.example.csy.entity
+    mapper-locations: classpath:/mapper/*Mapper.xml
